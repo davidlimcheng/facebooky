@@ -1,6 +1,7 @@
 var express = require('express');
 var request = require('request');
 var cheerio = require('cheerio');
+var parseString = require('xml2js').parseString;
 var app = express();
 
 var sendError = function(res, errorMessage) {
@@ -18,8 +19,10 @@ var sendFacebookRSS = function(res, id) {
     }
   }, function (error, response, body) {
     if (!error && response.statusCode === 200) {
-      console.log(body);
-      res.send(body);
+
+      parseString(body, function (err, result) {
+        res.send(result);
+      });
     }
   });
 };
