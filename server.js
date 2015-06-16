@@ -3,6 +3,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 var parseString = require('xml2js').parseString;
 var app = express();
+var env = process.env.NODE_ENV || 'development';
 
 var sendError = function(res, errorMessage) {
   res.send({
@@ -41,7 +42,22 @@ var allowCrossDomain = function(req, res, next) {
   }
 };
 
+/**
+ * Since we're showing personal pictures, make sure we only pass data over https
+ */
+var forceSSL = function(req, res, next) {
+  if (req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(['https://', req.get('Host'), req.url].join(''));
+  }
+  return next();
+};
+
+// When in production, force SSL
+if (env === 'production') {
+  app.use(forceSSL);
+}
 app.use(allowCrossDomain);
+
 app.get('/:id?', function(req, res){
   var id = req.params.id;
 
