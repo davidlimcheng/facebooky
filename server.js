@@ -1,9 +1,8 @@
 var express = require('express');
 var request = require('request');
+var Browser = require('zombie');
 var cheerio = require('cheerio');
-var parseString = require('xml2js').parseString;
 var app = express();
-var env = process.env.NODE_ENV || 'development';
 
 var sendError = function(res, errorMessage) {
   res.send({
@@ -12,6 +11,68 @@ var sendError = function(res, errorMessage) {
   });
 };
 
+var parsePosts = function(body){
+  var $ = cheerio.load(body);
+  var posts = [];
+  //test
+  console.log($('#pagelet_timeline_main_column').html());
+
+
+  //not functional
+  $('.userContentWrapper').each(function(i, element) {
+    var text = $(this).children().attr('data-hover');
+    posts.push({
+      text: text
+    });
+  });
+  return posts;
+};
+
+
+var getPosts = function(res, id) {
+  //multiple waitFor calls to equal 10 seconds
+  browser = new Browser({waitFor:5000});
+  browser.visit('http://facebook.com/'+id, {waitFor:5000}, function (body) {
+      body = browser.html('body');
+      var posts = parsePosts(body);
+      res.send({
+        id: id,
+        posts: posts
+      });
+    }
+  );
+};
+
+var allowCrossDomain = function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+
+  /** Question - intercept OPTIONS method - How would the OPTION method ever be utilized?
+  Wouldn't it always be a GET? **/
+  if ('OPTIONS' == req.method) {
+    res.send(200);
+  }
+  else {
+    next();
+  }
+};
+
+app.use(allowCrossDomain);
+//Possibly use app.all(...) here, then we wouldn't need to intercept OPTIONS?
+app.get('/:id?', function(req, res){
+  var id = req.params.id;
+  var posts = [];
+
+  if (!id) {
+    sendError(res, 'Please send a valid id');
+  } else {
+    posts = getPosts(res, id);
+  }
+
+});
+
+/**
 var sendFacebookRSS = function(res, id) {
   request({
     url: 'https://www.facebook.com/feeds/page.php?format=rss20&id=' + id,
@@ -44,7 +105,7 @@ var allowCrossDomain = function(req, res, next) {
 
 /**
  * Since we're showing personal pictures, make sure we only pass data over https
- */
+
 var forceSSL = function(req, res, next) {
   if (req.headers['x-forwarded-proto'] !== 'https') {
     return res.redirect(['https://', req.get('Host'), req.url].join(''));
@@ -69,5 +130,6 @@ app.get('/:id?', function(req, res){
 
 });
 
-var port = process.env.PORT || 3000;
+**/
+var port = process.env.PORT || 3200;
 app.listen(port);
