@@ -32,16 +32,23 @@ var parsePosts = function(body){
 var getPosts = function(res, id) {
   phantom.create(function(ph){
     ph.createPage(function (page){
-      page.open('http://facebook.com/'+id, function(body){
-          body = page.content;
+      page.open('http://facebook.com/'+id, function(status, body){
+        // 5 second wait time just in case
+        setTimeout(function(){
+          // returns success
+          console.log('opened facebook?', status);
+          // returns undefined
           console.log(page.content);
+          body = page.content;
+          var posts = parsePosts(body);
+            res.send({
+            id: id,
+            posts: posts
+          });
+        }, 5000);
+        ph.exit();
       });
     });
-  });
-  var posts = parsePosts(body);
-  res.send({
-    id: id,
-    posts: posts
   });
 };
 
