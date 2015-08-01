@@ -1,8 +1,8 @@
 var express = require('express');
 var request = require('request');
-var Browser = require('zombie');
 var cheerio = require('cheerio');
 var app = express();
+var phantom = require('phantom');
 
 var sendError = function(res, errorMessage) {
   res.send({
@@ -15,7 +15,7 @@ var parsePosts = function(body){
   var $ = cheerio.load(body);
   var posts = [];
   //test
-  console.log($('#pagelet_timeline_main_column').html());
+  //console.log($('#pagelet_timeline_main_column').html());
 
 
   //not functional
@@ -30,20 +30,26 @@ var parsePosts = function(body){
 
 
 var getPosts = function(res, id) {
-  //multiple waitFor calls to equal 10 seconds
-  browser = new Browser({waitFor:5000});
-  browser.visit('http://facebook.com/'+id, {waitFor:5000}, function (body) {
-      //also, instead of waitFor, can assert if an element has been rendered
-      browser.assert.success('.userContentWrapper');
-      //.usercontentWrapper has been rendered
-      body = browser.html('body');
-      var posts = parsePosts(body);
-      res.send({
-        id: id,
-        posts: posts
+  phantom.create(function(ph){
+    ph.createPage(function (page){
+      var url = 'http://facebook.com/' + id;
+      console.log('Getting the html for ' + url);
+      page.open(url, function(status) {
+        console.log('status', status);
+        page.evaluate(function () {
+          return document.querySelectorAll('div [role="main"]')[1].innerHTML;
+        }, function (result) {
+          console.log('body is ' + result);
+
+          res.send({
+            'id': result
+          });
+
+          ph.exit();
+        });
       });
-    }
-  );
+    });
+  });
 };
 
 var allowCrossDomain = function(req, res, next) {
