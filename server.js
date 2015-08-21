@@ -14,27 +14,18 @@ var sendError = function(res, errorMessage) {
 var parsePosts = function(body){
   var $ = cheerio.load(body);
   var posts = [];
-  //test
-  console.log($('.userContent').text());
 
-  $('.userContent').each(function(i, elem){
-    var text = $(this).text();
+  $('.userContentWrapper').each(function(i, elem){
+    var date = $(this).find('._5ptz').attr('title');
+    var text = $(this).find('.userContent').text();
     text = text.trim();
     if(text){posts.push({
+      date: date,
       text: text
     });
     }
   });
 
-
-  /*
-  $('.userContentWrapper').each(function(i, element) {
-    var text = $(this).children().attr('data-hover');
-    posts.push({
-      text: text
-    });
-  });*/
-  console.log(posts);
   return posts;
 };
 
@@ -43,9 +34,7 @@ var getPosts = function(res, id) {
   phantom.create(function(ph){
     ph.createPage(function (page){
       var url = 'http://facebook.com/' + id;
-      console.log('Getting the html for ' + url);
       page.open(url, function(status) {
-        console.log('status', status);
         page.evaluate(function () {
           return document.querySelectorAll('div [role="main"]')[1].innerHTML;
         }, function (result) {
@@ -54,8 +43,8 @@ var getPosts = function(res, id) {
           res.send({
             posts: posts
           });
-          ph.exit();
         });
+        ph.exit();
       });
     });
   });
