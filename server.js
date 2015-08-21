@@ -15,16 +15,26 @@ var parsePosts = function(body){
   var $ = cheerio.load(body);
   var posts = [];
   //test
-  //console.log($('#pagelet_timeline_main_column').html());
+  console.log($('.userContent').text());
+
+  $('.userContent').each(function(i, elem){
+    var text = $(this).text();
+    text = text.trim();
+    if(text){posts.push({
+      text: text
+    });
+    }
+  });
 
 
-  //not functional
+  /*
   $('.userContentWrapper').each(function(i, element) {
     var text = $(this).children().attr('data-hover');
     posts.push({
       text: text
     });
-  });
+  });*/
+  console.log(posts);
   return posts;
 };
 
@@ -39,12 +49,11 @@ var getPosts = function(res, id) {
         page.evaluate(function () {
           return document.querySelectorAll('div [role="main"]')[1].innerHTML;
         }, function (result) {
-          console.log('body is ' + result);
+          posts = parsePosts(result);
 
           res.send({
-            'id': result
+            posts: posts
           });
-
           ph.exit();
         });
       });
