@@ -2,7 +2,7 @@ var express = require('express');
 var request = require('request');
 var cheerio = require('cheerio');
 var app = express();
-var phantom = require('phantom');
+var phridge = require('phridge');
 
 var sendError = function(res, errorMessage) {
   res.send({
@@ -31,22 +31,31 @@ var parsePosts = function(body){
 
 
 var getPosts = function(res, id) {
-  phantom.create(function(ph){
-    ph.createPage(function (page){
-      var url = 'http://facebook.com/' + id;
-      page.open(url, function(status) {
-        page.evaluate(function () {
-          return document.querySelectorAll('div [role="main"]')[1].innerHTML;
-        }, function (result) {
-          posts = parsePosts(result);
+  var url = 'http://facebook.com/' + id;
+  phridge.spawn()
+    .then(function(phantom){
+      return phantom.openPage(url);
+    })
 
-          res.send({
-            posts: posts
-          });
-        });
-        ph.exit();
+    .then(function(page){
+      return page.run(function(){
+        return this.evaluate(function(){
+          return document.body.innerHTML;
       });
     });
+  })
+
+    .finally(phridge.disposeAll)
+
+    .done(function(body){
+      console.log(body);
+      posts = parsePosts(body);
+
+      res.send({
+        posts:posts
+      });
+    }, function(err){
+      throw err;
   });
 };
 
